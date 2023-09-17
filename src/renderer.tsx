@@ -26,6 +26,16 @@
  * ```
  */
 
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 import './index.css';
+import {App} from "./renderer/App";
 
+const el = document.querySelector(`#app`);
+const root = ReactDOM.createRoot(el);
+root.render(
+  <React.StrictMode>
+    <App/>
+  </React.StrictMode>
+);
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
