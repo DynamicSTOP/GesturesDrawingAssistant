@@ -19,6 +19,7 @@ export const ActiveSession: React.FC<ActiveSessionProps> = ({ baseUrl, mediaFold
 
   const [isLoading, setLoading] = useState(true);
   const [mediasIdsList, setMediasIdsList] = useState<string[]>([]);
+  const [currentSwitchInterval, setCurrentSwitchInterval] = useState<number>(15000);
 
   useEffect(() => {
     const getMediaIdsListMessage: GetMediaIdsListMessage = {
@@ -43,17 +44,17 @@ export const ActiveSession: React.FC<ActiveSessionProps> = ({ baseUrl, mediaFold
 
   useEffect(() => {
     setCurrentMediaIndex(0);
-    if (mediasIdsList.length === 0) {
+    if (mediasIdsList.length === 0 || currentSwitchInterval === 0) {
       return;
     }
     const interval = setInterval(() => {
       setCurrentMediaIndex(old => (old + 1) % mediasIdsList.length);
-    }, 15000);
+    }, currentSwitchInterval);
 
     return () => {
       clearInterval(interval);
     };
-  }, [mediasIdsList]);
+  }, [mediasIdsList, currentSwitchInterval]);
 
   const currentMediaId = mediasIdsList.at(currentMediaIndex);
 
@@ -65,7 +66,20 @@ export const ActiveSession: React.FC<ActiveSessionProps> = ({ baseUrl, mediaFold
 
   return (
     <Flex align="center" justify="center" style={{ minHeight: "100vh" }}>
-      <img src={`${baseUrl}${currentMediaId}`} alt="Media" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+      <img
+        src={`${baseUrl}${currentMediaId}`}
+        alt="Media"
+        style={{
+          maxWidth: "98vw",
+          maxHeight: "98vh",
+          width: "auto",
+          height: "auto",
+          display: "block",
+          margin: "auto",
+          objectFit: "contain"
+        }}
+      />
+
     </Flex>
   );
 }
