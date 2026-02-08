@@ -1,6 +1,7 @@
 import { Box, Heading, Spinner } from "@radix-ui/themes";
 import { useContext } from "react";
 
+import { ActiveSession } from "../ActiveSession";
 import { AppContext } from "../privileged/context/AppContext";
 import { QRCode } from "../QRCode";
 
@@ -11,9 +12,13 @@ export const NonPrivileged: React.FC = () => {
     return null;
   }
 
-  const { httpPort, host } = appInfo;
+  const { httpPort, host, currentMediaId, currentSlideShowInterval, gestureAppState } = appInfo;
   const serverUrl = `http://${host}:${httpPort}/app/`;
+  const baseUrl = `http://${host}:${httpPort}/static/`;
 
+  if (gestureAppState === 'slideshow') {
+    return <ActiveSession baseUrl={baseUrl} currentMediaId={currentMediaId ?? ''} currentSlideShowInterval={currentSlideShowInterval} />
+  }
   return (
     <Box p="6">
       <Heading size="7" mb="4">
@@ -22,4 +27,5 @@ export const NonPrivileged: React.FC = () => {
       <QRCode url={serverUrl} />
     </Box>
   )
+
 }

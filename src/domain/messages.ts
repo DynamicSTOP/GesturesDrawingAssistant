@@ -26,6 +26,8 @@ export interface AppInfoMessage extends BaseMessage {
     localStartTime: string | null;
     gestureAppState: GestureAppState;
     mediaFolder: string;
+    currentMediaId: string | null;
+    currentSlideShowInterval: number;
   };
 }
 
@@ -68,3 +70,41 @@ export interface GetMediaIdsListMessage extends BaseMessage {
 }
 
 export const isGetMediaIdsListMessage = (message: BaseMessage): message is GetMediaIdsListMessage => message.type === "getMediaIdsList";
+
+
+export interface ChangeCurrentSlideShowIntervalMessage extends BaseMessage {
+  type: "changeCurrentSlideShowInterval";
+  data: {
+    interval: number;
+  };
+}
+
+// eslint-disable-next-line id-length
+export const isChangeCurrentSlideShowIntervalMessage = (message: BaseMessage): message is ChangeCurrentSlideShowIntervalMessage => message.type === "changeCurrentSlideShowInterval";
+
+export interface StartSlideShowMessage extends BaseMessage {
+  type: "startSlideShow";
+  data: {
+    interval: number;
+  };
+}
+
+export const isStartSlideShowMessage = (message: BaseMessage): message is StartSlideShowMessage => message.type === "startSlideShow";
+
+export interface GestureAppStateMessage extends BaseMessage {
+  type: "gestureAppState";
+  data: {
+    state: GestureAppState;
+  };
+}
+
+export const isGestureAppStateMessage = (message: BaseMessage): message is GestureAppStateMessage => message.type === "gestureAppState";
+
+export interface GestureAppCurrentMediaIdMessage extends BaseMessage {
+  type: "gestureAppCurrentMediaId";
+  data: {
+    currentMediaId: string | null;
+  };
+}
+
+export const isGestureAppCurrentMediaIdMessage = (message: BaseMessage): message is GestureAppCurrentMediaIdMessage => message.type === "gestureAppCurrentMediaId";

@@ -1,4 +1,5 @@
-export const isLocalhost = (remoteAddress: string | undefined, host: string) => remoteAddress !== undefined && (remoteAddress === host || remoteAddress === "127.0.0.1" || remoteAddress === "::1" || remoteAddress === "localhost");
+export const isLocalhost = (remoteAddress: string | undefined, host: string) => remoteAddress !== undefined
+  && (remoteAddress === host || remoteAddress === "127.0.0.1" || remoteAddress === "::1" || remoteAddress === "localhost");
 
 
 export function shuffleArray<T>(array: T[]): T[] {

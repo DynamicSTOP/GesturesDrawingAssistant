@@ -2,8 +2,8 @@ import type { RawData, WebSocket } from "ws";
 import { WebSocketServer } from "ws";
 
 import { isLocalhost } from "../../domain/helpers";
-import type { BaseMessage, GetMediaIdsListMessage, ListFolderMessage, SetMediaFolderMessage } from "../../domain/messages";
-import { isBaseMessage, isGetMediaIdsListMessage, isListFolderRequestMessage, isSetMediaFolderMessage } from "../../domain/messages";
+import type { BaseMessage, ChangeCurrentSlideShowIntervalMessage, GestureAppCurrentMediaIdMessage, GestureAppStateMessage, GetMediaIdsListMessage, ListFolderMessage, SetMediaFolderMessage } from "../../domain/messages";
+import { isBaseMessage, isGetMediaIdsListMessage, isListFolderRequestMessage, isSetMediaFolderMessage, isStartSlideShowMessage } from "../../domain/messages";
 import type { GestureApp } from "../GestureApp";
 import { appInfo } from "./api/appInfo";
 import { listFolder } from "./api/listFolder";
@@ -32,6 +32,7 @@ interface WebsocketListenerProps {
   gestureApp: GestureApp;
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity, complexity
 const websocketListener = ({ ws, isPrivileged, serverProps, gestureApp }: WebsocketListenerProps) => (raw: RawData) => {
   try {
     const strMessage = parseMessage(raw);
@@ -81,6 +82,13 @@ const websocketListener = ({ ws, isPrivileged, serverProps, gestureApp }: Websoc
           send({ state: gestureApp.getState() });
           return;
         }
+        case "startSlideShow": {
+          if (isStartSlideShowMessage(message)) {
+            gestureApp.setCurrentSlideShowInterval(message.data.interval);
+            gestureApp.startSlideShow();
+          }
+          return;
+        }
         default: {
           // not a privileged message
           break;
@@ -122,6 +130,43 @@ const websocketListener = ({ ws, isPrivileged, serverProps, gestureApp }: Websoc
 
 const connectedClients = new Map<WebSocket, { isPrivileged: boolean }>();
 
+const sendToAllClients = (message: BaseMessage) => {
+  const data = JSON.stringify(message)
+  Array.from(connectedClients.keys()).forEach((ws) => {
+    ws.send(data);
+  });
+}
+
+const addGestureAppListener = (gestureApp: GestureApp) => {
+  gestureApp.addEventListener("changeState", () => {
+    const state = gestureApp.getState();
+    const message: GestureAppStateMessage = {
+      type: "gestureAppState",
+      data: { state },
+    };
+    sendToAllClients(message);
+  });
+
+  gestureApp.addEventListener("changeCurrentMediaId", () => {
+    const currentMediaId = gestureApp.getCurrentMediaId();
+    const message: GestureAppCurrentMediaIdMessage = {
+      type: "gestureAppCurrentMediaId",
+      data: { currentMediaId },
+    };
+    sendToAllClients(message);
+  });
+
+  gestureApp.addEventListener("changeCurrentSlideShowInterval", () => {
+    const currentSlideShowInterval = gestureApp.getCurrentSlideShowInterval();
+    const message: ChangeCurrentSlideShowIntervalMessage = {
+      type: "changeCurrentSlideShowInterval",
+      data: { interval: currentSlideShowInterval },
+    };
+    sendToAllClients(message);
+  });
+}
+
+
 export const createWsServer = async (serverProps: { httpPort: number, wsPort: number, host: string, gestureApp: GestureApp }): Promise<void> => {
   const { wsPort, host, gestureApp } = serverProps;
   const wss = new WebSocketServer({ host: '0.0.0.0', port: wsPort });
@@ -141,6 +186,8 @@ export const createWsServer = async (serverProps: { httpPort: number, wsPort: nu
     console.log(`Connected client: ${remoteAddress}`, isPrivileged);
     console.log(`Connected clients: ${connectedClients.size}`);
   });
+
+  addGestureAppListener(gestureApp);
 
   return new Promise<void>((resolve) => {
     wss.on("listening", () => {

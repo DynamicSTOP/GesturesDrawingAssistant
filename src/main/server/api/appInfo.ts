@@ -13,6 +13,8 @@ export const appInfo = ({ serverProps: { httpPort, wsPort, host }, isPrivileged,
     localStartTime: gestureApp.getSetting("local_start_time") ?? null,
     gestureAppState: gestureApp.getState(),
     mediaFolder: gestureApp.getMediaFolder(),
+    currentMediaId: gestureApp.getCurrentMediaId(),
+    currentSlideShowInterval: gestureApp.getCurrentSlideShowInterval(),
   }
   return message;
 }

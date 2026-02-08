@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import type Database from "better-sqlite3";
 
 import type { GestureAppBaseEvent, GestureAppEvents, GestureAppState } from "../domain/gestureApp";
+import { shuffleArray } from "../domain/helpers";
 import { getDBSetting, upsertDBSetting } from "./database";
 import { listImagesInFolder } from "./server/api/listFolder";
 
@@ -34,6 +35,7 @@ export class GestureApp extends EventTarget {
       return;
     }
     this.state = state;
+    console.log("switchState", state);
     this.dispatchEvent(GestureApp.makeEvent('changeState', { state: this.state }));
   }
 
@@ -48,8 +50,6 @@ export class GestureApp extends EventTarget {
   private readonly mediaIdsMap = new Map<string, string>();
 
   public getMediaIdsList(): string[] {
-    // return getDBSetting(this.db, "media_ids_list") ?? [];
-
     const files = listImagesInFolder({ folderPath: `${this.getMediaFolder()}/` });
     files.forEach(file => {
       this.mediaIdsMap.set(crypto.randomUUID(), file);
@@ -59,6 +59,60 @@ export class GestureApp extends EventTarget {
 
   getMediaIdFilePath(mediaId: string | undefined = ''): string {
     return this.mediaIdsMap.get(mediaId) ?? "";
+  }
+
+  private currentMediaId: string | null = null;
+
+  getCurrentMediaId(): string | null {
+    return this.currentMediaId;
+  }
+
+  private currentSlideShowInterval = 30000;
+
+  setCurrentSlideShowInterval(interval: number) {
+    this.currentSlideShowInterval = interval;
+    this.dispatchEvent(GestureApp.makeEvent('changeCurrentSlideShowInterval', { interval: this.currentSlideShowInterval }));
+  }
+
+  getCurrentSlideShowInterval(): number {
+    return this.currentSlideShowInterval;
+  }
+
+  setCurrentMediaId(mediaId: string) {
+    console.log("setCurrentMediaId", mediaId);
+    this.currentMediaId = mediaId;
+    this.dispatchEvent(GestureApp.makeEvent('changeCurrentMediaId', { mediaId: this.currentMediaId }));
+  }
+
+  private slideShowInterval: NodeJS.Timeout | null = null;
+
+  public startSlideShow() {
+    if (this.slideShowInterval !== null) {
+      clearInterval(this.slideShowInterval);
+    }
+    const list = this.getMediaIdsList();
+    if (list.length === 0) {
+      return;
+    }
+
+    shuffleArray(list);
+    let currentIndex = 0;
+    this.setCurrentMediaId(list[currentIndex]);
+
+    this.switchState("slideshow");
+    this.slideShowInterval = setInterval(() => {
+      currentIndex = (currentIndex + 1) % list.length;
+      const newMediaId = list[currentIndex];
+      this.setCurrentMediaId(newMediaId);
+    }, this.currentSlideShowInterval);
+  }
+
+  public stopSlideShow() {
+    if (this.slideShowInterval !== null) {
+      clearInterval(this.slideShowInterval);
+    }
+    this.slideShowInterval = null;
+    this.switchState("idle");
   }
 }
 

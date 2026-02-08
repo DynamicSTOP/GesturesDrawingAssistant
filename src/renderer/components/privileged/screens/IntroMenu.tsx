@@ -1,21 +1,28 @@
 import { Box, Button, Flex, Text } from "@radix-ui/themes";
 import { useCallback, useContext, } from "react";
 
+import type { StartSlideShowMessage } from "../../../../domain/messages";
 import { QRCode } from "../../QRCode";
 import { AppContext } from "../context/AppContext";
 import type { CurrentScreen } from "../Privileged";
 
-interface IntroMenuProps {
-  setCurrentScreen: (screen: CurrentScreen) => void;
-}
 
-
-export const IntroMenu: React.FC<IntroMenuProps> = ({ setCurrentScreen }) => {
-  const { appInfo } = useContext(AppContext);
+export const IntroMenu: React.FC<{ setCurrentScreen: (screen: CurrentScreen) => void }> = ({ setCurrentScreen }) => {
+  const { appInfo, frontendNetwork } = useContext(AppContext);
 
   const handleSetCurrentScreen = useCallback<React.MouseEventHandler<HTMLButtonElement>>(({ currentTarget: { value } }) => {
     setCurrentScreen(value as CurrentScreen);
   }, [setCurrentScreen]);
+
+  const startSlideShow = useCallback(() => {
+    const startSlideShowMessage: StartSlideShowMessage = {
+      type: "startSlideShow",
+      data: {
+        interval: 30000,
+      },
+    };
+    frontendNetwork.send(startSlideShowMessage);
+  }, [frontendNetwork]);
 
   if (appInfo === null) {
     return null;
@@ -40,7 +47,7 @@ export const IntroMenu: React.FC<IntroMenuProps> = ({ setCurrentScreen }) => {
 
         {mediaFolder ? <Text size="2" color="gray">Current Media Folder: {mediaFolder}</Text> : null}
 
-        {mediaFolder ? <Button size="3" variant="solid" style={{ width: "100%" }} onClick={handleSetCurrentScreen} value="activeSession">
+        {mediaFolder ? <Button size="3" variant="solid" style={{ width: "100%" }} onClick={startSlideShow} value="activeSession">
           Start
         </Button> : null}
 

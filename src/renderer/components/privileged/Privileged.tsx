@@ -2,8 +2,8 @@ import { useCallback, useContext, useEffect, useState } from "react";
 
 import { isAppMessageEvent } from "../../../domain/customEvents";
 import { isSetMediaFolderMessage } from "../../../domain/messages";
+import { ActiveSession } from "../ActiveSession";
 import { AppContext } from "./context/AppContext";
-import { ActiveSession } from "./screens/ActiveSession";
 import { IntroMenu } from "./screens/IntroMenu";
 import { SelectFolder } from "./screens/SelectFolder";
 
@@ -25,13 +25,14 @@ export const Privileged: React.FC = () => {
 
   useEffect(() => frontendNetwork.addListener("appMessage", mediaFolderCallback), [mediaFolderCallback, frontendNetwork]);
 
+  if (appInfo?.gestureAppState === 'idle') {
+    if (currentScreen === "introMenu") {
+      return <IntroMenu setCurrentScreen={setCurrentScreen} />;
+    }
 
-  if (currentScreen === "introMenu") {
-    return <IntroMenu setCurrentScreen={setCurrentScreen} />;
-  }
-
-  if (currentScreen === "selectFolder") {
-    return <SelectFolder setCurrentScreen={setCurrentScreen} />;
+    if (currentScreen === "selectFolder") {
+      return <SelectFolder setCurrentScreen={setCurrentScreen} />;
+    }
   }
 
   if (appInfo === null) {
@@ -40,5 +41,7 @@ export const Privileged: React.FC = () => {
 
   const baseUrl = `http://${appInfo.host}:${appInfo.httpPort}/static/`;
 
-  return <ActiveSession baseUrl={baseUrl} setCurrentScreen={setCurrentScreen} mediaFolder={appInfo.mediaFolder} />;
+  return <ActiveSession baseUrl={baseUrl}
+    currentMediaId={appInfo.currentMediaId ?? ''}
+    currentSlideShowInterval={appInfo.currentSlideShowInterval} />;
 };
