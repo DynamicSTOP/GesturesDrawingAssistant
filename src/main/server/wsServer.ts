@@ -1,4 +1,3 @@
-import type Database from "better-sqlite3";
 import type { RawData, WebSocket } from "ws";
 import { WebSocketServer } from "ws";
 
@@ -20,7 +19,6 @@ function parseMessage(raw: RawData): string {
 }
 
 export interface CreateWsServerProps {
-  db: Database.Database;
   httpPort: number;
   wsPort: number;
   host: string;
@@ -81,7 +79,7 @@ const websocketListener = ({ ws, isPrivileged, serverProps, gestureApp }: { ws: 
 
 const connectedClients = new Map<WebSocket, { isPrivileged: boolean }>();
 
-export const createWsServer = async (serverProps: { db: Database.Database, httpPort: number, wsPort: number, host: string, gestureApp: GestureApp }): Promise<void> => {
+export const createWsServer = async (serverProps: { httpPort: number, wsPort: number, host: string, gestureApp: GestureApp }): Promise<void> => {
   const { wsPort, host, gestureApp } = serverProps;
   const wss = new WebSocketServer({ host: '0.0.0.0', port: wsPort });
 

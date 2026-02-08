@@ -40,7 +40,7 @@ export function initDatabase(): Database.Database {
   return db;
 }
 
-export function getSetting(
+export function getDBSetting(
   db: Database.Database,
   key: string
 ): string | undefined {

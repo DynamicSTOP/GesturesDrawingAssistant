@@ -31,15 +31,14 @@ async function main(): Promise<void> {
 
   const mainWindow = await createWindow();
 
-  // Initialize SQLite database (creates file + tables if needed, writes local_start_time)
   const db = initDatabase();
-  
+
   const host = getLocalIp();
 
-  const gestureApp = new GestureApp();
+  const gestureApp = new GestureApp({ db });
 
   // Start HTTP and WebSocket servers (waits for both to be listening)
-  await startServer({ db, httpPort: HTTP_PORT, wsPort: WS_PORT, host, gestureApp });
+  await startServer({ httpPort: HTTP_PORT, wsPort: WS_PORT, host, gestureApp });
 
   // Redirect to the React app once both servers are ready
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;

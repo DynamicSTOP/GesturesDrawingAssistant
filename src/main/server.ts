@@ -1,12 +1,9 @@
-import type Database from "better-sqlite3";
-
 import type { GestureApp } from "./gestureApp";
 import { createHttpServer } from "./server/httpServer";
 import { createWsServer } from "./server/wsServer";
 
 
 export interface StartServerProps {
-  db: Database.Database,
   httpPort: number,
   wsPort: number,
   host: string,

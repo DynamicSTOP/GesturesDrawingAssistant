@@ -1,4 +1,3 @@
-import type Database from "better-sqlite3";
 import express from "express";
 import http from "http";
 import path from "path";
@@ -7,7 +6,7 @@ import type { GestureApp } from "../gestureApp";
 import { isLocalhost } from "../helpers";
 import { appInfo } from "./api/appInfo";
 
-export const createHttpServer = async ({ httpPort, wsPort, host, gestureApp, db }: { httpPort: number, wsPort: number, host: string, gestureApp: GestureApp, db: Database.Database }): Promise<void> => {
+export const createHttpServer = async ({ httpPort, wsPort, host, gestureApp }: { httpPort: number, wsPort: number, host: string, gestureApp: GestureApp }): Promise<void> => {
   const app = express();
 
   // Serve React app static files under /app
@@ -18,7 +17,7 @@ export const createHttpServer = async ({ httpPort, wsPort, host, gestureApp, db 
 
     const isPrivileged = isLocalhost(_req.socket.remoteAddress, host);
 
-    res.json(appInfo({ serverProps: { db, httpPort, wsPort, host }, isPrivileged, gestureApp }));
+    res.json(appInfo({ serverProps: { httpPort, wsPort, host }, isPrivileged, gestureApp }));
   });
 
   // SPA fallback: any /app/* route serves index.html
