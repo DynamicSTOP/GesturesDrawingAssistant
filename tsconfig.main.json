@@ -18,6 +18,6 @@
     "sourceMap": true,
     "declaration": false
   },
-  "include": ["src/main", "src/preload", "src/domain"],
+  "include": ["src/main", "src/domain"],
   "exclude": ["node_modules", "dist"]
 }

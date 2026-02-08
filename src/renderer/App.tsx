@@ -1,67 +1,42 @@
 import { Box, Heading, Text } from "@radix-ui/themes";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
+import { isAppMessageEvent, isConnectionStatusEvent } from "../domain/customEvents";
 import type { AppInfoMessage } from "../domain/messages";
+import { isAppInfoMessage } from "../domain/messages";
+import type { ConnectionStatus, FrontendNetwork } from "./frontendNetwork";
 
-export function App(): React.JSX.Element {
+export function App({ frontendNetwork }: { frontendNetwork: FrontendNetwork }): React.JSX.Element {
 
   const [appInfo, setAppInfo] = useState<AppInfoMessage['data'] | null>(null);
-  const [websocketInfo, setWebsocketInfo] = useState<AppInfoMessage['data'] | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState("Connecting...");
-  const wsRef = useRef<WebSocket | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(frontendNetwork.getConnectionStatus());
 
-  useEffect(() => {
-    fetch("/app/info")
-      .then(async res => res.json() as Promise<AppInfoMessage['data']>)
-      .then((data: AppInfoMessage['data']) => {
-        setWebsocketInfo(data);
-      })
-      .catch((error: unknown) => {
-        console.error(error);
-      });
+  const connectionStatusCallback = useCallback((event: Event) => {
+    if (isConnectionStatusEvent(event)) {
+      setConnectionStatus(event.detail.status);
+    }
   }, []);
 
   useEffect(() => {
-    if (websocketInfo === null) {
-      return;
-    }
-    const wsUrl = `ws://${websocketInfo.host}:${websocketInfo.wsPort}`;
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
-
-    ws.addEventListener("open", () => {
-      setConnectionStatus("Connected");
-      ws.send(JSON.stringify({ type: "appInfo", data: {} }));
-    });
-
-    ws.addEventListener("message", (event) => {
-      try {
-        const message = JSON.parse(String(event.data)) as {
-          type: string;
-          data: AppInfoMessage['data'];
-        };
-
-        if (message.type === "appInfo") {
-          setAppInfo(message.data);
-        }
-      } catch {
-        // Ignore malformed messages
-      }
-    });
-
-    ws.addEventListener("close", () => {
-      setConnectionStatus("Disconnected");
-    });
-
-    ws.addEventListener("error", () => {
-      setConnectionStatus("Connection error");
-    });
-
+    frontendNetwork.addEventListener("connectionStatus", connectionStatusCallback);
     return () => {
-      ws.close();
-      wsRef.current = null;
+      frontendNetwork.removeEventListener("connectionStatus", connectionStatusCallback);
     };
-  }, [websocketInfo]);
+  }, [connectionStatusCallback, frontendNetwork]);
+
+  const appInfoCallback = useCallback((event: Event) => {
+    if (isAppMessageEvent(event) && isAppInfoMessage(event.detail)) {
+      setAppInfo(event.detail.data);
+    }
+  }, []);
+
+  useEffect(() => {
+    frontendNetwork.addEventListener("appMessage", appInfoCallback);
+    return () => {
+      frontendNetwork.removeEventListener("appMessage", appInfoCallback);
+    };
+  }, [appInfoCallback, frontendNetwork]);
+
 
   return (
     <Box p="6">
@@ -69,16 +44,16 @@ export function App(): React.JSX.Element {
         Hello World
       </Heading>
       <Text as="p" size="3" mb="2">
-        Is Privileged: {(websocketInfo?.isPrivileged ?? false) ? "Yes" : "No"}
+        Is Privileged: {(appInfo?.isPrivileged ?? false) ? "Yes" : "No"}
       </Text>
       <Text as="p" size="3" mb="2">
-        HTTP Port: {websocketInfo?.httpPort}
+        HTTP Port: {appInfo?.httpPort}
       </Text>
       <Text as="p" size="3" mb="2">
-        WebSocket Port: {websocketInfo?.wsPort}
+        WebSocket Port: {appInfo?.wsPort}
       </Text>
       <Text as="p" size="3" mb="2">
-        Gesture App State: {websocketInfo?.gestureAppState}
+        Gesture App State: {appInfo?.gestureAppState}
       </Text>
       <Text as="p" size="3" mb="2">
         WebSocket Status: {connectionStatus}

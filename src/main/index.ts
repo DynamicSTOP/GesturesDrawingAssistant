@@ -15,7 +15,6 @@ async function createWindow(): Promise<BrowserWindow> {
     width: 1200,
     height: 800,
     webPreferences: {
-      preload: path.join(__dirname, "preload", "index.js"),
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -52,7 +51,11 @@ async function main(): Promise<void> {
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow().catch(console.error);
+      createWindow().then(win => {
+        if (devServerUrl !== undefined) {
+          win.webContents.openDevTools();
+        }
+      }).catch(console.error);
     }
   });
 }

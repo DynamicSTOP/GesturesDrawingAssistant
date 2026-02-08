@@ -8,7 +8,7 @@
     "build:renderer": "vite build",
     "build": "pnpm run build:main && pnpm run build:renderer",
     "start": "pnpm run build && electron .",
-    "dev": "concurrently -k \"vite dev\" \"tsc -p tsconfig.main.json --watch --preserveWatchOutput\" \"wait-on tcp:5173 dist/main/index.js && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
+    "dev": "concurrently -k \"vite dev\" \"tsc -p tsconfig.main.json --watch --preserveWatchOutput\" \"wait-on tcp:5173 dist/main/main/index.js && cross-env VITE_DEV_SERVER_URL=http://localhost:5173/app electron .\"",
     "postinstall": "electron-rebuild -f -w better-sqlite3",
     "lint": "eslint src/",
     "release": "pnpm run build && electron-builder"

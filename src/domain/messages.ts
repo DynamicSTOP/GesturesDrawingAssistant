@@ -13,8 +13,6 @@ export const isBaseMessage = (message: unknown): message is BaseMessage => {
   return "type" in messageObj && typeof messageObj.type === "string" && "data" in messageObj && typeof messageObj.data === "object" && messageObj.data !== null;
 }
 
-
-
 export interface AppInfoMessage extends BaseMessage {
   type: "appInfo";
   data: {
@@ -27,3 +25,5 @@ export interface AppInfoMessage extends BaseMessage {
     gestureAppState: GestureAppState;
   };
 }
+
+export const isAppInfoMessage = (message: BaseMessage): message is AppInfoMessage => message.type === "appInfo";
