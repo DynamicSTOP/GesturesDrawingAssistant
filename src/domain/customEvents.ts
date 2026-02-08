@@ -1,4 +1,4 @@
-import type { ConnectionStatus } from "../renderer/frontendNetwork";
+import type { ConnectionStatus } from "./connection";
 import type { BaseMessage } from "./messages";
 
 export interface ConnectionStatusEventData {

@@ -1,14 +1,16 @@
-import { Box, Heading, Spinner, Text } from "@radix-ui/themes";
-import { useCallback, useEffect, useState } from "react";
+import { Box, Heading, Spinner, Theme } from "@radix-ui/themes";
+import { useCallback, useContext, useEffect, useState } from "react";
 
+import type { ConnectionStatus } from "../domain/connection";
 import { isAppMessageEvent, isConnectionStatusEvent } from "../domain/customEvents";
-import type { AppInfoMessage } from "../domain/messages";
 import { isAppInfoMessage } from "../domain/messages";
-import type { ConnectionStatus, FrontendNetwork } from "./frontendNetwork";
+import { NonPrivileged } from "./components/nonPrivileged/NonPrivileged";
+import { AppContext } from "./components/privileged/context/AppContext";
+import { Privileged } from "./components/privileged/Privileged";
 
-export function App({ frontendNetwork }: { frontendNetwork: FrontendNetwork }): React.JSX.Element {
+export function App(): React.JSX.Element {
 
-  const [appInfo, setAppInfo] = useState<AppInfoMessage['data'] | null>(null);
+  const { appInfo, setAppInfo, frontendNetwork } = useContext(AppContext);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(frontendNetwork.getConnectionStatus());
 
   const connectionStatusCallback = useCallback((event: Event) => {
@@ -22,7 +24,7 @@ export function App({ frontendNetwork }: { frontendNetwork: FrontendNetwork }): 
     if (isAppMessageEvent(event) && isAppInfoMessage(event.detail)) {
       setAppInfo(event.detail.data);
     }
-  }, []);
+  }, [setAppInfo]);
 
   useEffect(() => frontendNetwork.addListener("connectionStatus", connectionStatusCallback), [connectionStatusCallback, frontendNetwork]);
   useEffect(() => frontendNetwork.addListener("appMessage", appInfoCallback), [appInfoCallback, frontendNetwork]);
@@ -31,42 +33,15 @@ export function App({ frontendNetwork }: { frontendNetwork: FrontendNetwork }): 
     return (
       <Box p="6">
         <Heading size="7" mb="4">
+          {connectionStatus} {appInfo === null ? "null" : "not null"}
           Connecting to app... <Spinner />
         </Heading>
       </Box>
     );
   }
-  const { isPrivileged, httpPort, wsPort, gestureAppState, localStartTime, cwd } = appInfo;
+  const { isPrivileged } = appInfo;
 
-  return (
-    <Box p="6">
-      <Heading size="7" mb="4">
-        Hello World
-      </Heading>
-      <Text as="p" size="3" mb="2">
-        Is Privileged: {isPrivileged ? "Yes" : "No"}
-      </Text>
-      <Text as="p" size="3" mb="2">
-        HTTP Port: {httpPort}
-      </Text>
-      <Text as="p" size="3" mb="2">
-        WebSocket Port: {wsPort}
-      </Text>
-      <Text as="p" size="3" mb="2">
-        Gesture App State: {gestureAppState}
-      </Text>
-      <Text as="p" size="3" mb="2">
-        WebSocket Status: {connectionStatus}
-      </Text>
-      <Text as="p" size="3" mb="2">
-        Working Directory: {cwd}
-      </Text>
-      {localStartTime !== null && (
-        <Text as="p" size="3" mb="2">
-          Local Start Time:{" "}
-          {new Date(Number(localStartTime)).toLocaleString()}
-        </Text>
-      )}
-    </Box>
-  );
+  return <Theme appearance="dark">
+    {isPrivileged ? (<Privileged />) : (<NonPrivileged />)}
+  </Theme>
 }

@@ -1,10 +1,7 @@
+import type { ConnectionStatus, FrontendNetworkEvents } from "../domain/connection";
 import type { ConnectionStatusEventData } from "../domain/customEvents";
 import type { AppInfoMessage, BaseMessage } from "../domain/messages";
 import { isBaseMessage } from "../domain/messages";
-
-export type ConnectionStatus = "connected" | "disconnected" | "disconnecting" | "error" | "unknown";
-
-export type FrontendNetworkEvents = "connectionStatus" | "appMessage";
 
 export class FrontendNetwork extends EventTarget {
   private ws: WebSocket | null = null;
@@ -24,9 +21,9 @@ export class FrontendNetwork extends EventTarget {
       port = url.port || null;
     }
 
-    let origin = `http://localhost`;
+    let origin = `http://${window.location.hostname}`;
     if (port !== null) {
-      origin = `http://localhost:${port}`;
+      origin = `http://${window.location.hostname}:${port}`;
     }
 
     fetch(`${origin}/app/info`, { mode: 'cors' })
@@ -107,6 +104,14 @@ export class FrontendNetwork extends EventTarget {
     return () => {
       this.removeEventListener(type, listener)
     };
+  }
+
+  send(message: BaseMessage) {
+    if (this.ws === null) {
+      console.error("WebSocket is not connected");
+      return;
+    }
+    this.ws.send(JSON.stringify(message));
   }
 
   close() {

@@ -49,3 +49,11 @@ export function getDBSetting(
     .get(key) as { value: string } | undefined;
   return row?.value;
 }
+
+export function upsertDBSetting(
+  db: Database.Database,
+  key: string,
+  value: string
+) {
+  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)").run(key, value);
+}

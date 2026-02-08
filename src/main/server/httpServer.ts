@@ -12,7 +12,7 @@ export const createHttpServer = async ({ httpPort, wsPort, host, gestureApp }: {
   const isDev = process.env.VITE_DEV_SERVER_URL !== undefined;
 
   if (isDev) {
-    app.use((req, res, next) => {
+    app.use((_, res, next) => {
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type');

@@ -1,12 +1,7 @@
 import type Database from "better-sqlite3";
 
-import { getDBSetting } from "./database";
-
-export type GestureAppState = "idle" | "slideshow" | "paused" | "singleImage";
-
-export type GestureAppEvents = 'changeState';
-
-export type GestureAppBaseEvent = Record<string, unknown>;
+import type { GestureAppBaseEvent, GestureAppEvents, GestureAppState } from "../domain/gestureApp";
+import { getDBSetting, upsertDBSetting } from "./database";
 
 export class GestureApp extends EventTarget {
   constructor({ db }: { db: Database.Database }) {
@@ -37,6 +32,14 @@ export class GestureApp extends EventTarget {
     }
     this.state = state;
     this.dispatchEvent(GestureApp.makeEvent('changeState', { state: this.state }));
+  }
+
+  getMediaFolder(): string {
+    return getDBSetting(this.db, "media_folder") ?? process.cwd();
+  }
+
+  setMediaFolder(folder: string) {
+    upsertDBSetting(this.db, "media_folder", folder);
   }
 }
 

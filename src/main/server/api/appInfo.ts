@@ -1,5 +1,5 @@
 import type { AppInfoMessage } from "../../../domain/messages";
-import type { GestureApp } from "../../gestureApp";
+import type { GestureApp } from "../../GestureApp";
 import type { CreateWsServerProps } from "../wsServer";
 
 export const appInfo = ({ serverProps: { httpPort, wsPort, host }, isPrivileged, gestureApp }
@@ -12,6 +12,7 @@ export const appInfo = ({ serverProps: { httpPort, wsPort, host }, isPrivileged,
     cwd: process.cwd(),
     localStartTime: gestureApp.getSetting("local_start_time") ?? null,
     gestureAppState: gestureApp.getState(),
+    mediaFolder: gestureApp.getMediaFolder(),
   }
   return message;
 }
