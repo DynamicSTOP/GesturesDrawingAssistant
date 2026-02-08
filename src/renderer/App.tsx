@@ -1,27 +1,19 @@
 import { Box, Heading, Text } from "@radix-ui/themes";
 import { useEffect, useRef, useState } from "react";
 
-interface WebsocketInfo {
-  host: string;
-  wsPort: number;
-}
-
-interface AppInfo {
-  cwd: string;
-  localStartTime: string | null;
-}
+import type { AppInfoMessage } from "../domain/messages";
 
 export function App(): React.JSX.Element {
 
-  const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
-  const [websocketInfo, setWebsocketInfo] = useState<WebsocketInfo | null>(null);
+  const [appInfo, setAppInfo] = useState<AppInfoMessage['data'] | null>(null);
+  const [websocketInfo, setWebsocketInfo] = useState<AppInfoMessage['data'] | null>(null);
   const [connectionStatus, setConnectionStatus] = useState("Connecting...");
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     fetch("/app/info")
-      .then(async res => res.json() as Promise<WebsocketInfo>)
-      .then((data: WebsocketInfo) => {
+      .then(async res => res.json() as Promise<AppInfoMessage['data']>)
+      .then((data: AppInfoMessage['data']) => {
         setWebsocketInfo(data);
       })
       .catch((error: unknown) => {
@@ -39,14 +31,14 @@ export function App(): React.JSX.Element {
 
     ws.addEventListener("open", () => {
       setConnectionStatus("Connected");
-      ws.send(JSON.stringify({ type: "appInfo" }));
+      ws.send(JSON.stringify({ type: "appInfo", data: {} }));
     });
 
     ws.addEventListener("message", (event) => {
       try {
         const message = JSON.parse(String(event.data)) as {
           type: string;
-          data: AppInfo;
+          data: AppInfoMessage['data'];
         };
 
         if (message.type === "appInfo") {
@@ -77,10 +69,16 @@ export function App(): React.JSX.Element {
         Hello World
       </Heading>
       <Text as="p" size="3" mb="2">
-        Local IP: {websocketInfo?.host}
+        Is Privileged: {(websocketInfo?.isPrivileged ?? false) ? "Yes" : "No"}
+      </Text>
+      <Text as="p" size="3" mb="2">
+        HTTP Port: {websocketInfo?.httpPort}
       </Text>
       <Text as="p" size="3" mb="2">
         WebSocket Port: {websocketInfo?.wsPort}
+      </Text>
+      <Text as="p" size="3" mb="2">
+        Gesture App State: {websocketInfo?.gestureAppState}
       </Text>
       <Text as="p" size="3" mb="2">
         WebSocket Status: {connectionStatus}
