@@ -101,7 +101,7 @@ export const createWsServer = async (serverProps: { httpPort: number, wsPort: nu
 
   return new Promise<void>((resolve) => {
     wss.on("listening", () => {
-      console.log(`WebSocket server listening on ${host}:${wsPort}`);
+      console.log(`WebSocket server listening on 0.0.0.0:${wsPort}`);
       resolve();
     });
   });

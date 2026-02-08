@@ -1,6 +1,8 @@
 
 `pnpm install` rebilds all native modules
 
+`pnpm dev` run with hot reload for the frontend
+
 `pnpm run build` compiles both main (tsc) and renderer (Vite)
 
 `pnpm run lint` checks for errors

@@ -44,7 +44,7 @@ async function main(): Promise<void> {
   const baseUrl =
     devServerUrl === undefined
       ? `http://localhost:${HTTP_PORT}/app`
-      : `${devServerUrl}/app`;
+      : `${devServerUrl}/app?port=${HTTP_PORT}`;
 
   console.log(`Redirecting to: ${baseUrl}`);
   await mainWindow.loadURL(baseUrl);

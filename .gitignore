@@ -16,4 +16,4 @@ pnpm-debug.log*
 .idea/
 .vscode/*
 !.vscode/extensions.json
-db.sqlite3
+db.sqlite3*

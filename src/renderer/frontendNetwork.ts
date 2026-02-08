@@ -4,6 +4,7 @@ import { isBaseMessage } from "../domain/messages";
 
 export type ConnectionStatus = "connected" | "disconnected" | "disconnecting" | "error" | "unknown";
 
+export type FrontendNetworkEvents = "connectionStatus" | "appMessage";
 
 export class FrontendNetwork extends EventTarget {
   private ws: WebSocket | null = null;
@@ -16,7 +17,19 @@ export class FrontendNetwork extends EventTarget {
   }
 
   private init() {
-    fetch("/app/info")
+    let port: string | null = new URLSearchParams(window.location.search).get("port");
+
+    if (port === null) {
+      const url = new URL(window.location.origin);
+      port = url.port || null;
+    }
+
+    let origin = `http://localhost`;
+    if (port !== null) {
+      origin = `http://localhost:${port}`;
+    }
+
+    fetch(`${origin}/app/info`, { mode: 'cors' })
       .then(async res => res.json() as Promise<AppInfoMessage['data']>)
       .then((data: AppInfoMessage['data']) => {
         const wsUrl = `ws://${data.host}:${data.wsPort}`;
@@ -29,7 +42,7 @@ export class FrontendNetwork extends EventTarget {
   }
 
 
-  private static makeEvent<T = unknown>(type: string, detail: T): CustomEvent<T> {
+  private static makeEvent<T = unknown>(type: FrontendNetworkEvents, detail: T): CustomEvent<T> {
     return new CustomEvent<T>(type, { detail });
   }
 
@@ -42,7 +55,7 @@ export class FrontendNetwork extends EventTarget {
     this.ws = ws;
 
     ws.addEventListener("open", () => {
-      this.dispatchEvent(new CustomEvent("connectionStatus", { detail: "Connected" }));
+      this.dispatchEvent(new CustomEvent("connectionStatus", { detail: { status: "connected" } }));
       ws.send(JSON.stringify({ type: "appInfo", data: {} }));
     });
 
@@ -87,6 +100,13 @@ export class FrontendNetwork extends EventTarget {
       }
     }
     return 'unknown';
+  }
+
+  addListener(type: FrontendNetworkEvents, listener: (event: Event) => void) {
+    this.addEventListener(type, listener);
+    return () => {
+      this.removeEventListener(type, listener)
+    };
   }
 
   close() {

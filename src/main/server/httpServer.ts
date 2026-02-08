@@ -9,6 +9,17 @@ import { appInfo } from "./api/appInfo";
 export const createHttpServer = async ({ httpPort, wsPort, host, gestureApp }: { httpPort: number, wsPort: number, host: string, gestureApp: GestureApp }): Promise<void> => {
   const app = express();
 
+  const isDev = process.env.VITE_DEV_SERVER_URL !== undefined;
+
+  if (isDev) {
+    app.use((req, res, next) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      next();
+    });
+  }
+
   // Serve React app static files under /app
   const rendererPath = path.join(__dirname, "..", '..', "..", "renderer");
   app.use("/app", express.static(rendererPath));
@@ -34,7 +45,7 @@ export const createHttpServer = async ({ httpPort, wsPort, host, gestureApp }: {
 
   return new Promise<void>((resolve) => {
     httpServer.listen(httpPort, '0.0.0.0', () => {
-      console.log(`HTTP server listening on ${host}:${httpPort}`);
+      console.log(`HTTP server listening on 0.0.0.0:${httpPort}`);
       resolve();
     });
   })
