@@ -1,4 +1,4 @@
-import type { GestureApp } from "./gestureApp";
+import type { GestureApp } from "./GestureApp";
 import { createHttpServer } from "./server/httpServer";
 import { createWsServer } from "./server/wsServer";
 

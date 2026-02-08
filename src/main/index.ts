@@ -2,7 +2,7 @@ import { app, BrowserWindow } from "electron";
 import path from "path";
 
 import { initDatabase } from "./database";
-import { GestureApp } from "./gestureApp";
+import { GestureApp } from "./GestureApp";
 import { getLocalIp } from "./network";
 import { startServer } from "./server";
 

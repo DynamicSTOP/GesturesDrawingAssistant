@@ -11,7 +11,7 @@ import { SelectFolder } from "./screens/SelectFolder";
 export type CurrentScreen = "introMenu" | "selectFolder" | "activeSession";
 
 export const Privileged: React.FC = () => {
-  const { frontendNetwork, setAppInfo } = useContext(AppContext);
+  const { frontendNetwork, setAppInfo, appInfo } = useContext(AppContext);
   const [currentScreen, setCurrentScreen] = useState<CurrentScreen>("introMenu");
 
 
@@ -34,5 +34,11 @@ export const Privileged: React.FC = () => {
     return <SelectFolder setCurrentScreen={setCurrentScreen} />;
   }
 
-  return <ActiveSession setCurrentScreen={setCurrentScreen} />;
+  if (appInfo === null) {
+    return null;
+  }
+
+  const baseUrl = `http://${appInfo.host}:${appInfo.httpPort}/static/`;
+
+  return <ActiveSession baseUrl={baseUrl} setCurrentScreen={setCurrentScreen} mediaFolder={appInfo.mediaFolder} />;
 };

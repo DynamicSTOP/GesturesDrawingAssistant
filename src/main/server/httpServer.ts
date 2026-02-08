@@ -2,8 +2,8 @@ import express from "express";
 import http from "http";
 import path from "path";
 
-import type { GestureApp } from "../gestureApp";
-import { isLocalhost } from "../helpers";
+import { isLocalhost } from "../../domain/helpers";
+import type { GestureApp } from "../GestureApp";
 import { appInfo } from "./api/appInfo";
 
 export const createHttpServer = async ({ httpPort, wsPort, host, gestureApp }: { httpPort: number, wsPort: number, host: string, gestureApp: GestureApp }): Promise<void> => {
@@ -36,9 +36,14 @@ export const createHttpServer = async ({ httpPort, wsPort, host, gestureApp }: {
     res.sendFile(path.join(rendererPath, "index.html"));
   });
 
-  // Reserved route for future local file serving
-  app.get("/static/:uuid/*", (_req, res) => {
-    res.status(404).json({ error: "Not implemented yet" });
+  app.get("/static/:uuid", (_req, res) => {
+    const uuid = _req.params.uuid;
+    const filePath = gestureApp.getMediaIdFilePath(uuid);
+    if (filePath === '') {
+      res.status(404).json({ error: "Media not found" });
+    } else {
+      res.sendFile(filePath);
+    }
   });
 
   const httpServer = http.createServer(app);

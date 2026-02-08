@@ -1,10 +1,10 @@
 import type { RawData, WebSocket } from "ws";
 import { WebSocketServer } from "ws";
 
-import type { BaseMessage, ListFolderMessage, SetMediaFolderMessage } from "../../domain/messages";
-import { isBaseMessage, isListFolderRequestMessage, isSetMediaFolderMessage } from "../../domain/messages";
+import { isLocalhost } from "../../domain/helpers";
+import type { BaseMessage, GetMediaIdsListMessage, ListFolderMessage, SetMediaFolderMessage } from "../../domain/messages";
+import { isBaseMessage, isGetMediaIdsListMessage, isListFolderRequestMessage, isSetMediaFolderMessage } from "../../domain/messages";
 import type { GestureApp } from "../GestureApp";
-import { isLocalhost } from "../helpers";
 import { appInfo } from "./api/appInfo";
 import { listFolder } from "./api/listFolder";
 
@@ -25,8 +25,14 @@ export interface CreateWsServerProps {
   host: string;
 }
 
+interface WebsocketListenerProps {
+  ws: WebSocket;
+  isPrivileged: boolean;
+  serverProps: CreateWsServerProps;
+  gestureApp: GestureApp;
+}
 
-const websocketListener = ({ ws, isPrivileged, serverProps, gestureApp }: { ws: WebSocket, isPrivileged: boolean, serverProps: CreateWsServerProps, gestureApp: GestureApp }) => (raw: RawData) => {
+const websocketListener = ({ ws, isPrivileged, serverProps, gestureApp }: WebsocketListenerProps) => (raw: RawData) => {
   try {
     const strMessage = parseMessage(raw);
     const message: unknown = JSON.parse(strMessage);
@@ -85,15 +91,27 @@ const websocketListener = ({ ws, isPrivileged, serverProps, gestureApp }: { ws: 
     switch (message.type) {
       case "appInfo": {
         send(appInfo({ serverProps, isPrivileged, gestureApp }));
-        break;
+        return;
       }
       case "getCurrentState": {
         send({ state: gestureApp.getState() });
-        break;
+        return;
+      }
+      case "getMediaIdsList": {
+        if (isGetMediaIdsListMessage(message)) {
+          const getMediaIdsListMessage: GetMediaIdsListMessage = {
+            type: "getMediaIdsList",
+            data: {
+              mediaFolder: gestureApp.getMediaFolder(),
+              mediaIds: gestureApp.getMediaIdsList()
+            },
+          };
+          sendRaw(getMediaIdsListMessage);
+        }
+        return;
       }
       default: {
         console.warn(`Unknown message type: ${message.type}`);
-        break;
       }
     }
   } catch (error) {

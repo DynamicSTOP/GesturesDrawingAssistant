@@ -25,3 +25,21 @@ export const listFolder = ({ folderPath, showHidden = false }: { folderPath: str
   });
   return folders;
 }
+
+const isImageExtension = (extension: string): boolean => [".jpg", ".jpeg", ".png", ".gif", ".webp"].includes(extension.toLowerCase());
+
+export const listImagesInFolder = ({ folderPath }: { folderPath: string }): string[] => {
+  const imageFiles: string[] = [];
+  const files = fs.readdirSync(folderPath);
+
+  files.forEach(file => {
+    const stats = fs.statSync(`${folderPath}/${file}`);
+    if (stats.isFile() && isImageExtension(path.extname(file))) {
+      imageFiles.push(`${folderPath}/${file}`);
+    } else if (stats.isDirectory()) {
+      imageFiles.push(...listImagesInFolder({ folderPath: `${folderPath}/${file}/` }));
+    }
+  });
+
+  return imageFiles;
+}

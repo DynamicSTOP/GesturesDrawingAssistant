@@ -58,3 +58,13 @@ export interface SetMediaFolderMessage extends BaseMessage {
 
 export const isSetMediaFolderMessage = (message: BaseMessage): message is SetMediaFolderMessage => message.type === "setMediaFolder";
 
+
+export interface GetMediaIdsListMessage extends BaseMessage {
+  type: "getMediaIdsList";
+  data: {
+    mediaFolder: string;
+    mediaIds?: string[];
+  };
+}
+
+export const isGetMediaIdsListMessage = (message: BaseMessage): message is GetMediaIdsListMessage => message.type === "getMediaIdsList";
