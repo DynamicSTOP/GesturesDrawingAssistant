@@ -81,24 +81,14 @@ export interface ChangeCurrentSlideShowIntervalMessage extends BaseMessage {
 
 // eslint-disable-next-line id-length
 export const isChangeCurrentSlideShowIntervalMessage = (message: BaseMessage): message is ChangeCurrentSlideShowIntervalMessage => message.type === "changeCurrentSlideShowInterval";
-
-export interface StartSlideShowMessage extends BaseMessage {
-  type: "startSlideShow";
+export interface SetGestureAppStateMessage extends BaseMessage {
+  type: "setGestureAppState";
   data: {
-    interval: number;
+    newGestureAppState: GestureAppState;
   };
 }
 
-export const isStartSlideShowMessage = (message: BaseMessage): message is StartSlideShowMessage => message.type === "startSlideShow";
-
-export interface GestureAppStateMessage extends BaseMessage {
-  type: "gestureAppState";
-  data: {
-    state: GestureAppState;
-  };
-}
-
-export const isGestureAppStateMessage = (message: BaseMessage): message is GestureAppStateMessage => message.type === "gestureAppState";
+export const isSetGestureAppStateMessage = (message: BaseMessage): message is SetGestureAppStateMessage => message.type === "setGestureAppState";
 
 export interface GestureAppCurrentMediaIdMessage extends BaseMessage {
   type: "gestureAppCurrentMediaId";

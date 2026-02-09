@@ -2,8 +2,8 @@ import type { RawData, WebSocket } from "ws";
 import { WebSocketServer } from "ws";
 
 import { isLocalhost } from "../../domain/helpers";
-import type { BaseMessage, ChangeCurrentSlideShowIntervalMessage, GestureAppCurrentMediaIdMessage, GestureAppStateMessage, GetMediaIdsListMessage, ListFolderMessage, SetMediaFolderMessage } from "../../domain/messages";
-import { isBaseMessage, isGetMediaIdsListMessage, isListFolderRequestMessage, isSetMediaFolderMessage, isStartSlideShowMessage } from "../../domain/messages";
+import type { BaseMessage, ChangeCurrentSlideShowIntervalMessage, GestureAppCurrentMediaIdMessage, GetMediaIdsListMessage, ListFolderMessage, SetGestureAppStateMessage, SetMediaFolderMessage } from "../../domain/messages";
+import { isBaseMessage, isGetMediaIdsListMessage, isListFolderRequestMessage, isSetGestureAppStateMessage, isSetMediaFolderMessage } from "../../domain/messages";
 import type { GestureApp } from "../GestureApp";
 import { appInfo } from "./api/appInfo";
 import { listFolder } from "./api/listFolder";
@@ -82,10 +82,10 @@ const websocketListener = ({ ws, isPrivileged, serverProps, gestureApp }: Websoc
           send({ state: gestureApp.getState() });
           return;
         }
-        case "startSlideShow": {
-          if (isStartSlideShowMessage(message)) {
-            gestureApp.setCurrentSlideShowInterval(message.data.interval);
-            gestureApp.startSlideShow();
+        case "setGestureAppState": {
+          if (isSetGestureAppStateMessage(message)) {
+            const { newGestureAppState } = message.data;
+            gestureApp.switchState(newGestureAppState);
           }
           return;
         }
@@ -140,9 +140,9 @@ const sendToAllClients = (message: BaseMessage) => {
 const addGestureAppListener = (gestureApp: GestureApp) => {
   gestureApp.addEventListener("changeState", () => {
     const state = gestureApp.getState();
-    const message: GestureAppStateMessage = {
-      type: "gestureAppState",
-      data: { state },
+    const message: SetGestureAppStateMessage = {
+      type: "setGestureAppState",
+      data: { newGestureAppState: state },
     };
     sendToAllClients(message);
   });

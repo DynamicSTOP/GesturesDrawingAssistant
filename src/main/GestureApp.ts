@@ -29,7 +29,7 @@ export class GestureApp extends EventTarget {
     return this.state;
   }
 
-  switchState(state: GestureAppState) {
+  private setState(state: GestureAppState) {
     if (this.state === state) {
       console.warn(`State ${state} is already active`);
       return;
@@ -39,12 +39,26 @@ export class GestureApp extends EventTarget {
     this.dispatchEvent(GestureApp.makeEvent('changeState', { state: this.state }));
   }
 
+  public switchState(state: GestureAppState) {
+    if (state === this.getState()) {
+      return;
+    }
+    if (state === 'slideshow') {
+      this.startSlideShow();
+    }
+    if (state === 'idle') {
+      this.stopSlideShow();
+    }
+  }
+
   getMediaFolder(): string {
     return getDBSetting(this.db, "media_folder") ?? process.cwd();
   }
 
   setMediaFolder(folder: string) {
     upsertDBSetting(this.db, "media_folder", folder);
+    this.setCurrentMediaId("");
+    this.mediaIdsMap.clear();
   }
 
   private readonly mediaIdsMap = new Map<string, string>();
@@ -99,7 +113,7 @@ export class GestureApp extends EventTarget {
     let currentIndex = 0;
     this.setCurrentMediaId(list[currentIndex]);
 
-    this.switchState("slideshow");
+    this.setState("slideshow");
     this.slideShowInterval = setInterval(() => {
       currentIndex = (currentIndex + 1) % list.length;
       const newMediaId = list[currentIndex];
@@ -112,7 +126,7 @@ export class GestureApp extends EventTarget {
       clearInterval(this.slideShowInterval);
     }
     this.slideShowInterval = null;
-    this.switchState("idle");
+    this.setState("idle");
   }
 }
 

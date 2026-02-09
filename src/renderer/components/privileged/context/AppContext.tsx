@@ -4,7 +4,7 @@ import React, { createContext, useCallback, useEffect, useMemo, useState } from 
 import { isAppMessageEvent, isConnectionStatusEvent } from "../../../../domain/customEvents";
 import type { MediaFiles } from "../../../../domain/filesystem";
 import type { AppInfoMessage } from "../../../../domain/messages";
-import { isChangeCurrentSlideShowIntervalMessage, isGestureAppCurrentMediaIdMessage, isGestureAppStateMessage } from "../../../../domain/messages";
+import { isChangeCurrentSlideShowIntervalMessage, isGestureAppCurrentMediaIdMessage, isSetGestureAppStateMessage } from "../../../../domain/messages";
 import { FrontendNetwork } from "../../../frontendNetwork";
 
 interface AppContextType {
@@ -71,9 +71,10 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   useEffect(() => frontendNetwork.addListener("appMessage", currentSlideShowIntervalCallback), [currentSlideShowIntervalCallback]);
 
   const currentStateCallback = useCallback((event: Event) => {
-    if (isAppMessageEvent(event) && isGestureAppStateMessage(event.detail)) {
-      const { state } = event.detail.data;
-      setAppInfo(old => old === null ? null : ({ ...old, gestureAppState: state }));
+    console.log("currentStateCallback", event);
+    if (isAppMessageEvent(event) && isSetGestureAppStateMessage(event.detail)) {
+      const { newGestureAppState: gestureAppState } = event.detail.data;
+      setAppInfo(old => old === null ? null : ({ ...old, gestureAppState }));
     }
   }, [setAppInfo]);
   useEffect(() => frontendNetwork.addListener("appMessage", currentStateCallback), [currentStateCallback]);

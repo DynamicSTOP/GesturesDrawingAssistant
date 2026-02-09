@@ -42,6 +42,7 @@ export const Privileged: React.FC = () => {
   const baseUrl = `http://${appInfo.host}:${appInfo.httpPort}/static/`;
 
   return <ActiveSession baseUrl={baseUrl}
+    isPrivileged
     currentMediaId={appInfo.currentMediaId ?? ''}
     currentSlideShowInterval={appInfo.currentSlideShowInterval} />;
 };

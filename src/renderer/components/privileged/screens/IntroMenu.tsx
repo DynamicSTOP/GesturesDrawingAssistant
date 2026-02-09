@@ -1,7 +1,7 @@
 import { Box, Button, Flex, Text } from "@radix-ui/themes";
 import { useCallback, useContext, } from "react";
 
-import type { StartSlideShowMessage } from "../../../../domain/messages";
+import type { SetGestureAppStateMessage } from "../../../../domain/messages";
 import { QRCode } from "../../QRCode";
 import { AppContext } from "../context/AppContext";
 import type { CurrentScreen } from "../Privileged";
@@ -15,13 +15,13 @@ export const IntroMenu: React.FC<{ setCurrentScreen: (screen: CurrentScreen) => 
   }, [setCurrentScreen]);
 
   const startSlideShow = useCallback(() => {
-    const startSlideShowMessage: StartSlideShowMessage = {
-      type: "startSlideShow",
+    const setGestureAppStateMessage: SetGestureAppStateMessage = {
+      type: "setGestureAppState",
       data: {
-        interval: 30000,
+        newGestureAppState: 'slideshow',
       },
     };
-    frontendNetwork.send(startSlideShowMessage);
+    frontendNetwork.send(setGestureAppStateMessage);
   }, [frontendNetwork]);
 
   if (appInfo === null) {
