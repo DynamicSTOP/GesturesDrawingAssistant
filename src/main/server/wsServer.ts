@@ -2,8 +2,8 @@ import type { RawData, WebSocket } from "ws";
 import { WebSocketServer } from "ws";
 
 import { isLocalhost } from "../../domain/helpers";
-import type { BaseMessage, ChangeCurrentSlideShowIntervalMessage, GestureAppCurrentMediaIdMessage, GetMediaIdsListMessage, ListFolderMessage, SetGestureAppStateMessage, SetMediaFolderMessage } from "../../domain/messages";
-import { isBaseMessage, isGetMediaIdsListMessage, isListFolderRequestMessage, isSetGestureAppStateMessage, isSetMediaFolderMessage } from "../../domain/messages";
+import type { AppInfoUpdateMessage, BaseMessage, GestureAppCurrentMediaIdMessage, ListFolderMessage, SetGestureAppStateMessage, SetMediaFolderMessage } from "../../domain/messages";
+import { isBaseMessage, isGestureAppSwitchMediaMessage, isListFolderRequestMessage, isSetGestureAppStateMessage, isSetMediaFolderMessage } from "../../domain/messages";
 import type { GestureApp } from "../GestureApp";
 import { appInfo } from "./api/appInfo";
 import { listFolder } from "./api/listFolder";
@@ -32,6 +32,7 @@ interface WebsocketListenerProps {
   gestureApp: GestureApp;
 }
 
+
 // eslint-disable-next-line sonarjs/cognitive-complexity, complexity
 const websocketListener = ({ ws, isPrivileged, serverProps, gestureApp }: WebsocketListenerProps) => (raw: RawData) => {
   try {
@@ -44,6 +45,7 @@ const websocketListener = ({ ws, isPrivileged, serverProps, gestureApp }: Websoc
     }
 
     const type = message.type;
+    console.log(`Received message: ${type}`);
     const send = (data: BaseMessage['data']) => {
       ws.send(JSON.stringify({ type, data }));
     }
@@ -84,11 +86,21 @@ const websocketListener = ({ ws, isPrivileged, serverProps, gestureApp }: Websoc
         }
         case "setGestureAppState": {
           if (isSetGestureAppStateMessage(message)) {
-            const { newGestureAppState } = message.data;
+            const { newGestureAppState, slideShowInterval, greyscale, randomFlip } = message.data;
+            gestureApp.setCurrentSlideShowInterval(slideShowInterval);
+            gestureApp.setCurrentGreyscale(greyscale);
+            gestureApp.setRandomFlip(randomFlip);
             gestureApp.switchState(newGestureAppState);
           }
           return;
         }
+        case "gestureAppSwitchMedia": {
+          if (isGestureAppSwitchMediaMessage(message)) {
+            gestureApp.switchMedia(message.data.forward);
+          }
+          return;
+        }
+
         default: {
           // not a privileged message
           break;
@@ -103,19 +115,6 @@ const websocketListener = ({ ws, isPrivileged, serverProps, gestureApp }: Websoc
       }
       case "getCurrentState": {
         send({ state: gestureApp.getState() });
-        return;
-      }
-      case "getMediaIdsList": {
-        if (isGetMediaIdsListMessage(message)) {
-          const getMediaIdsListMessage: GetMediaIdsListMessage = {
-            type: "getMediaIdsList",
-            data: {
-              mediaFolder: gestureApp.getMediaFolder(),
-              mediaIds: gestureApp.getMediaIdsList()
-            },
-          };
-          sendRaw(getMediaIdsListMessage);
-        }
         return;
       }
       default: {
@@ -151,19 +150,31 @@ const addGestureAppListener = (gestureApp: GestureApp) => {
     const currentMediaId = gestureApp.getCurrentMediaId();
     const message: GestureAppCurrentMediaIdMessage = {
       type: "gestureAppCurrentMediaId",
-      data: { currentMediaId },
+      data: {
+        currentMediaId,
+        flipped: gestureApp.isMediaIdFlipped(currentMediaId)
+      },
     };
     sendToAllClients(message);
   });
 
-  gestureApp.addEventListener("changeCurrentSlideShowInterval", () => {
-    const currentSlideShowInterval = gestureApp.getCurrentSlideShowInterval();
-    const message: ChangeCurrentSlideShowIntervalMessage = {
-      type: "changeCurrentSlideShowInterval",
-      data: { interval: currentSlideShowInterval },
+  const sendAppInfoUpdate = () => {
+    const appInfoMessage: AppInfoUpdateMessage = {
+      type: "appInfoUpdate",
+      data: {
+        mediaFolder: gestureApp.getMediaFolder(),
+        currentSlideShowInterval: gestureApp.getCurrentSlideShowInterval(),
+        greyscale: gestureApp.getCurrentGreyscale(),
+        randomFlip: gestureApp.getRandomFlip(),
+      },
     };
-    sendToAllClients(message);
-  });
+    sendToAllClients(appInfoMessage);
+  }
+
+  gestureApp.addEventListener("changeCurrentSlideShowInterval", sendAppInfoUpdate);
+  gestureApp.addEventListener("changeCurrentGreyscale", sendAppInfoUpdate);
+  gestureApp.addEventListener("changeMediaFolder", sendAppInfoUpdate);
+  gestureApp.addEventListener("changeRandomFlip", sendAppInfoUpdate);
 }
 
 

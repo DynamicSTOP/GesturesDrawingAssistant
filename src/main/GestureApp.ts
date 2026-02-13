@@ -1,8 +1,10 @@
 import crypto from "node:crypto";
+import fs from "node:fs";
 
 import type Database from "better-sqlite3";
 
 import type { GestureAppBaseEvent, GestureAppEvents, GestureAppState } from "../domain/gestureApp";
+import { GestureAppStateEnum } from "../domain/gestureApp";
 import { shuffleArray } from "../domain/helpers";
 import { getDBSetting, upsertDBSetting } from "./database";
 import { listImagesInFolder } from "./server/api/listFolder";
@@ -11,18 +13,90 @@ export class GestureApp extends EventTarget {
   constructor({ db }: { db: Database.Database }) {
     super();
     this.db = db;
+    this.init();
   }
 
   private readonly db: Database.Database;
 
-  private state: GestureAppState = "idle";
+  private mediaFolder: string = process.cwd();
+
+  private state: GestureAppState = GestureAppStateEnum.IDLE;
+
+  private currentSlideShowInterval = 40000;
+
+  private currentGreyscale = 0;
+
+  private randomFlip = false;
+
+  private readMediaFolderFromDB(): string {
+    try {
+      const folder = getDBSetting(this.db, "media_folder");
+      if (folder === undefined || folder.trim() === '') {
+        return process.cwd();
+      }
+      const folderStats = fs.statSync(folder);
+      if (folderStats.isDirectory()) {
+        return folder;
+      }
+    } catch {
+      // fallthrough
+    }
+    return process.cwd();
+  }
+
+  private readRandomFlipFromDB(): boolean {
+    try {
+      const randomFlip = getDBSetting(this.db, "random_flip");
+      if (randomFlip === undefined) {
+        return false;
+      }
+      return randomFlip === "true";
+    } catch {
+      return false;
+    }
+  }
+
+  private readCurrentSlideShowIntervalFromDB(): number {
+    try {
+      const interval = getDBSetting(this.db, "current_slide_show_interval");
+      if (interval === undefined) {
+        return 40000;
+      }
+      const n = Number.parseInt(interval, 10);
+      if (!Number.isNaN(n) && n > 0 && n < 600000) {
+        return n;
+      }
+    } catch {
+      // fallthrough
+    }
+    return 40000;
+  }
+
+  private readCurrentGreyscaleFromDB(): number {
+    try {
+      const greyscale = getDBSetting(this.db, "current_greyscale");
+      if (greyscale === undefined) {
+        return 0;
+      }
+      const n = Number.parseInt(greyscale, 10);
+      if (!Number.isNaN(n) && n >= 0 && n <= 100) {
+        return n;
+      }
+    } catch {
+      // fallthrough
+    }
+    return 0;
+  }
+
+  private init() {
+    this.randomFlip = this.readRandomFlipFromDB();
+    this.mediaFolder = this.readMediaFolderFromDB();
+    this.currentSlideShowInterval = this.readCurrentSlideShowIntervalFromDB();
+    this.currentGreyscale = this.readCurrentGreyscaleFromDB();
+  }
 
   static makeEvent(type: GestureAppEvents, detail: GestureAppBaseEvent): CustomEvent<GestureAppBaseEvent> {
     return new CustomEvent<GestureAppBaseEvent>(type, { detail });
-  }
-
-  getSetting(key: string) {
-    return getDBSetting(this.db, key);
   }
 
   getState() {
@@ -43,27 +117,34 @@ export class GestureApp extends EventTarget {
     if (state === this.getState()) {
       return;
     }
-    if (state === 'slideshow') {
+    if (state === GestureAppStateEnum.SLIDESHOW) {
       this.startSlideShow();
     }
-    if (state === 'idle') {
+    if (state === GestureAppStateEnum.MANUAL) {
+      this.pauseSlideShow();
+    }
+    if (state === GestureAppStateEnum.IDLE) {
       this.stopSlideShow();
     }
   }
 
+
   getMediaFolder(): string {
-    return getDBSetting(this.db, "media_folder") ?? process.cwd();
+    return this.mediaFolder;
   }
 
   setMediaFolder(folder: string) {
     upsertDBSetting(this.db, "media_folder", folder);
+    this.mediaFolder = folder;
     this.setCurrentMediaId("");
     this.mediaIdsMap.clear();
+    this.dispatchEvent(GestureApp.makeEvent('changeMediaFolder', { mediaFolder: this.mediaFolder }));
   }
 
   private readonly mediaIdsMap = new Map<string, string>();
 
-  public getMediaIdsList(): string[] {
+  private getMediaIdsList(): string[] {
+    console.log("getMediaIdsList", this.mediaFolder);
     const files = listImagesInFolder({ folderPath: `${this.getMediaFolder()}/` });
     files.forEach(file => {
       this.mediaIdsMap.set(crypto.randomUUID(), file);
@@ -77,19 +158,34 @@ export class GestureApp extends EventTarget {
 
   private currentMediaId: string | null = null;
 
-  getCurrentMediaId(): string | null {
-    return this.currentMediaId;
+  getCurrentGreyscale(): number {
+    return this.currentGreyscale;
   }
 
-  private currentSlideShowInterval = 30000;
-
-  setCurrentSlideShowInterval(interval: number) {
-    this.currentSlideShowInterval = interval;
-    this.dispatchEvent(GestureApp.makeEvent('changeCurrentSlideShowInterval', { interval: this.currentSlideShowInterval }));
+  setCurrentGreyscale(greyscale?: number) {
+    if (greyscale === undefined || this.currentGreyscale === greyscale) {
+      return;
+    }
+    this.currentGreyscale = Math.max(0, Math.min(100, greyscale));
+    upsertDBSetting(this.db, "current_greyscale", String(this.currentGreyscale));
+    this.dispatchEvent(GestureApp.makeEvent('changeCurrentGreyscale', { greyscale: this.currentGreyscale }));
   }
 
   getCurrentSlideShowInterval(): number {
     return this.currentSlideShowInterval;
+  }
+
+  setCurrentSlideShowInterval(interval?: number) {
+    if (interval === undefined || this.currentSlideShowInterval === interval) {
+      return;
+    }
+    this.currentSlideShowInterval = interval;
+    upsertDBSetting(this.db, "current_slide_show_interval", String(this.currentSlideShowInterval));
+    this.dispatchEvent(GestureApp.makeEvent('changeCurrentSlideShowInterval', { interval: this.currentSlideShowInterval }));
+  }
+
+  getCurrentMediaId(): string | null {
+    return this.currentMediaId;
   }
 
   setCurrentMediaId(mediaId: string) {
@@ -99,6 +195,8 @@ export class GestureApp extends EventTarget {
   }
 
   private slideShowInterval: NodeJS.Timeout | null = null;
+
+  private slideShowList: string[] = [];
 
   public startSlideShow() {
     if (this.slideShowInterval !== null) {
@@ -112,8 +210,8 @@ export class GestureApp extends EventTarget {
     shuffleArray(list);
     let currentIndex = 0;
     this.setCurrentMediaId(list[currentIndex]);
-
-    this.setState("slideshow");
+    this.slideShowList = list;
+    this.setState(GestureAppStateEnum.SLIDESHOW);
     this.slideShowInterval = setInterval(() => {
       currentIndex = (currentIndex + 1) % list.length;
       const newMediaId = list[currentIndex];
@@ -121,12 +219,63 @@ export class GestureApp extends EventTarget {
     }, this.currentSlideShowInterval);
   }
 
+  public pauseSlideShow() {
+    if (this.slideShowInterval !== null) {
+      clearInterval(this.slideShowInterval);
+    }
+    this.slideShowInterval = null;
+    this.setState(GestureAppStateEnum.MANUAL);
+  }
+
+  public switchMedia(forward: boolean) {
+    if (this.slideShowList.length === 0) {
+      return;
+    }
+    let currentIndex = 0;
+    if (this.currentMediaId !== null) {
+      currentIndex = this.slideShowList.indexOf(this.currentMediaId);
+    }
+    const newIndex = (forward ? (currentIndex + 1) : (currentIndex - 1 + this.slideShowList.length)) % this.slideShowList.length;
+    this.setCurrentMediaId(this.slideShowList[newIndex]);
+    this.pauseSlideShow();
+  }
+
   public stopSlideShow() {
     if (this.slideShowInterval !== null) {
       clearInterval(this.slideShowInterval);
     }
     this.slideShowInterval = null;
-    this.setState("idle");
+    this.setState(GestureAppStateEnum.IDLE);
+  }
+
+  getRandomFlip(): boolean {
+    return this.randomFlip;
+  }
+
+  setRandomFlip(randomFlip = false) {
+    if(this.randomFlip === randomFlip) {
+      return;
+    }
+    this.randomFlip = randomFlip;
+    upsertDBSetting(this.db, "random_flip", String(this.randomFlip));
+    this.dispatchEvent(GestureApp.makeEvent('changeRandomFlip', { randomFlip: this.randomFlip }));
+  }
+
+  private readonly mediaIdsFlippedMap = new Map<string, boolean>();
+
+  isMediaIdFlipped(mediaId: string | null): boolean {
+    if (mediaId === null || !this.getRandomFlip()) {
+      return false;
+    }
+    const isMediaFlipped = this.mediaIdsFlippedMap.get(mediaId);
+
+    if (isMediaFlipped === undefined) {
+      const isFlipped = Math.random() < 0.5;
+      this.mediaIdsFlippedMap.set(mediaId, isFlipped);
+      return isFlipped;
+    }
+
+    return isMediaFlipped;
   }
 }
 

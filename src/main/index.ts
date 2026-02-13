@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, Menu } from "electron";
 import path from "path";
 
 import { initDatabase } from "./database";
@@ -10,10 +10,14 @@ import { startServer } from "./server";
 const HTTP_PORT = 8080;
 const WS_PORT = 8081;
 
+Menu.setApplicationMenu(null);
+
 async function createWindow(): Promise<BrowserWindow> {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
+    // frame: false,
+    // titleBarStyle: "hidden",
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

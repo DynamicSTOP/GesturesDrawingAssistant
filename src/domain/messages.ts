@@ -23,11 +23,13 @@ export interface AppInfoMessage extends BaseMessage {
     wsPort: number;
     host: string;
     cwd: string;
-    localStartTime: string | null;
     gestureAppState: GestureAppState;
     mediaFolder: string;
     currentMediaId: string | null;
     currentSlideShowInterval: number;
+    greyscale: number;
+    randomFlip: boolean;
+    flipped?: boolean;
   };
 }
 
@@ -61,17 +63,6 @@ export interface SetMediaFolderMessage extends BaseMessage {
 export const isSetMediaFolderMessage = (message: BaseMessage): message is SetMediaFolderMessage => message.type === "setMediaFolder";
 
 
-export interface GetMediaIdsListMessage extends BaseMessage {
-  type: "getMediaIdsList";
-  data: {
-    mediaFolder: string;
-    mediaIds?: string[];
-  };
-}
-
-export const isGetMediaIdsListMessage = (message: BaseMessage): message is GetMediaIdsListMessage => message.type === "getMediaIdsList";
-
-
 export interface ChangeCurrentSlideShowIntervalMessage extends BaseMessage {
   type: "changeCurrentSlideShowInterval";
   data: {
@@ -85,6 +76,9 @@ export interface SetGestureAppStateMessage extends BaseMessage {
   type: "setGestureAppState";
   data: {
     newGestureAppState: GestureAppState;
+    slideShowInterval?: number;
+    greyscale?: number;
+    randomFlip?: boolean;
   };
 }
 
@@ -94,7 +88,25 @@ export interface GestureAppCurrentMediaIdMessage extends BaseMessage {
   type: "gestureAppCurrentMediaId";
   data: {
     currentMediaId: string | null;
+    flipped: boolean;
   };
 }
 
 export const isGestureAppCurrentMediaIdMessage = (message: BaseMessage): message is GestureAppCurrentMediaIdMessage => message.type === "gestureAppCurrentMediaId";
+
+export interface AppInfoUpdateMessage extends BaseMessage {
+  type: "appInfoUpdate";
+  data: Partial<AppInfoMessage['data']>;
+}
+
+export const isAppInfoUpdateMessage = (message: BaseMessage): message is AppInfoUpdateMessage => message.type === "appInfoUpdate";
+
+
+export interface GestureAppSwitchMediaMessage extends BaseMessage {
+  type: "gestureAppSwitchMedia";
+  data: {
+    forward: boolean;
+  };
+}
+
+export const isGestureAppSwitchMediaMessage = (message: BaseMessage): message is GestureAppSwitchMediaMessage => message.type === "gestureAppSwitchMedia";

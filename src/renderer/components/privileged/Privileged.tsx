@@ -1,14 +1,17 @@
 import { useCallback, useContext, useEffect, useState } from "react";
 
 import { isAppMessageEvent } from "../../../domain/customEvents";
+import { GestureAppStateEnum } from "../../../domain/gestureApp";
 import { isSetMediaFolderMessage } from "../../../domain/messages";
 import { ActiveSession } from "../ActiveSession";
 import { AppContext } from "./context/AppContext";
 import { IntroMenu } from "./screens/IntroMenu";
 import { SelectFolder } from "./screens/SelectFolder";
+import { StartActivity } from "./screens/StartActivity";
 
 
-export type CurrentScreen = "introMenu" | "selectFolder" | "activeSession";
+
+export type CurrentScreen = "introMenu" | "selectFolder" | "activeSession" | "startActivity";
 
 export const Privileged: React.FC = () => {
   const { frontendNetwork, setAppInfo, appInfo } = useContext(AppContext);
@@ -25,7 +28,7 @@ export const Privileged: React.FC = () => {
 
   useEffect(() => frontendNetwork.addListener("appMessage", mediaFolderCallback), [mediaFolderCallback, frontendNetwork]);
 
-  if (appInfo?.gestureAppState === 'idle') {
+  if (appInfo?.gestureAppState === GestureAppStateEnum.IDLE) {
     if (currentScreen === "introMenu") {
       return <IntroMenu setCurrentScreen={setCurrentScreen} />;
     }
@@ -33,16 +36,19 @@ export const Privileged: React.FC = () => {
     if (currentScreen === "selectFolder") {
       return <SelectFolder setCurrentScreen={setCurrentScreen} />;
     }
+
+    if (currentScreen === "startActivity") {
+      return <StartActivity setCurrentScreen={setCurrentScreen} />;
+    }
   }
 
   if (appInfo === null) {
     return null;
   }
 
-  const baseUrl = `http://${appInfo.host}:${appInfo.httpPort}/static/`;
 
-  return <ActiveSession baseUrl={baseUrl}
+  return <ActiveSession
+    appInfo={appInfo}
     isPrivileged
-    currentMediaId={appInfo.currentMediaId ?? ''}
-    currentSlideShowInterval={appInfo.currentSlideShowInterval} />;
+  />;
 };

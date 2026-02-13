@@ -1,28 +1,23 @@
 import { Box, Button, Flex, Text } from "@radix-ui/themes";
 import { useCallback, useContext, } from "react";
 
-import type { SetGestureAppStateMessage } from "../../../../domain/messages";
+import { mediaFolderName } from "../../../utils/mediaFolder";
 import { QRCode } from "../../QRCode";
 import { AppContext } from "../context/AppContext";
 import type { CurrentScreen } from "../Privileged";
 
 
 export const IntroMenu: React.FC<{ setCurrentScreen: (screen: CurrentScreen) => void }> = ({ setCurrentScreen }) => {
-  const { appInfo, frontendNetwork } = useContext(AppContext);
+  const { appInfo } = useContext(AppContext);
 
   const handleSetCurrentScreen = useCallback<React.MouseEventHandler<HTMLButtonElement>>(({ currentTarget: { value } }) => {
     setCurrentScreen(value as CurrentScreen);
   }, [setCurrentScreen]);
 
-  const startSlideShow = useCallback(() => {
-    const setGestureAppStateMessage: SetGestureAppStateMessage = {
-      type: "setGestureAppState",
-      data: {
-        newGestureAppState: 'slideshow',
-      },
-    };
-    frontendNetwork.send(setGestureAppStateMessage);
-  }, [frontendNetwork]);
+  const switchToStartActivity = useCallback(() => {
+    setCurrentScreen("startActivity");
+  }, [setCurrentScreen]);
+
 
   if (appInfo === null) {
     return null;
@@ -45,10 +40,10 @@ export const IntroMenu: React.FC<{ setCurrentScreen: (screen: CurrentScreen) => 
           Select Folder
         </Button>
 
-        {mediaFolder ? <Text size="2" color="gray">Current Media Folder: {mediaFolder}</Text> : null}
+        {mediaFolder ? <Text size="2" color="gray">Current Media Folder: {mediaFolderName(mediaFolder)}</Text> : null}
 
-        {mediaFolder ? <Button size="3" variant="solid" style={{ width: "100%" }} onClick={startSlideShow} value="activeSession">
-          Start
+        {mediaFolder ? <Button size="3" variant="solid" style={{ width: "100%" }} onClick={switchToStartActivity} value="activeSession">
+          Start Activity
         </Button> : null}
 
         <QRCode url={localhostUrl} />

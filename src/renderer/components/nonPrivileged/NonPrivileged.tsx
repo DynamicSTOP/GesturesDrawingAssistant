@@ -1,6 +1,7 @@
 import { Box, Heading, Spinner } from "@radix-ui/themes";
 import { useContext } from "react";
 
+import { GestureAppStateEnum } from "../../../domain/gestureApp";
 import { ActiveSession } from "../ActiveSession";
 import { AppContext } from "../privileged/context/AppContext";
 import { QRCode } from "../QRCode";
@@ -12,12 +13,13 @@ export const NonPrivileged: React.FC = () => {
     return null;
   }
 
-  const { httpPort, host, currentMediaId, currentSlideShowInterval, gestureAppState } = appInfo;
+  const { httpPort, host, gestureAppState } = appInfo;
   const serverUrl = `http://${host}:${httpPort}/app/`;
-  const baseUrl = `http://${host}:${httpPort}/static/`;
 
-  if (gestureAppState === 'slideshow') {
-    return <ActiveSession baseUrl={baseUrl} currentMediaId={currentMediaId ?? ''} currentSlideShowInterval={currentSlideShowInterval} />
+  if (gestureAppState !== GestureAppStateEnum.IDLE) {
+    return <ActiveSession
+      appInfo={appInfo}
+      isPrivileged={false} />
   }
   return (
     <Box p="6">

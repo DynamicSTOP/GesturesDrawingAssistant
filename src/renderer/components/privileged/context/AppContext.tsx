@@ -4,7 +4,7 @@ import React, { createContext, useCallback, useEffect, useMemo, useState } from 
 import { isAppMessageEvent, isConnectionStatusEvent } from "../../../../domain/customEvents";
 import type { MediaFiles } from "../../../../domain/filesystem";
 import type { AppInfoMessage } from "../../../../domain/messages";
-import { isChangeCurrentSlideShowIntervalMessage, isGestureAppCurrentMediaIdMessage, isSetGestureAppStateMessage } from "../../../../domain/messages";
+import { isAppInfoUpdateMessage, isChangeCurrentSlideShowIntervalMessage, isGestureAppCurrentMediaIdMessage, isSetGestureAppStateMessage } from "../../../../domain/messages";
 import { FrontendNetwork } from "../../../frontendNetwork";
 
 interface AppContextType {
@@ -15,6 +15,8 @@ interface AppContextType {
   setSelectedFolderPath: Dispatch<SetStateAction<string | null>>;
   files: MediaFiles;
   setFiles: Dispatch<SetStateAction<MediaFiles>>;
+  randomFlip: boolean;
+  setRandomFlip: Dispatch<SetStateAction<boolean>>;
 }
 
 const notImplemented = () => {
@@ -43,6 +45,8 @@ export const AppContext = createContext<AppContextType>({
   setSelectedFolderPath: notImplemented,
   files: [],
   setFiles: notImplemented,
+  randomFlip: false,
+  setRandomFlip: notImplemented,
 });
 
 AppContext.displayName = "AppContext";
@@ -51,13 +55,13 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [appInfo, setAppInfo] = useState<AppInfoMessage['data'] | null>(null);
   const [selectedFolderPath, setSelectedFolderPath] = useState<string | null>(null);
   const [files, setFiles] = useState<MediaFiles>([]);
-
+  const [randomFlip, setRandomFlip] = useState<boolean>(false);
 
 
   const currentMediaIdCallback = useCallback((event: Event) => {
     if (isAppMessageEvent(event) && isGestureAppCurrentMediaIdMessage(event.detail)) {
-      const { currentMediaId } = event.detail.data;
-      setAppInfo(old => old === null ? null : ({ ...old, currentMediaId }));
+      const { currentMediaId, flipped } = event.detail.data;
+      setAppInfo(old => old === null ? null : ({ ...old, currentMediaId, flipped }));
     }
   }, [setAppInfo]);
   useEffect(() => frontendNetwork.addListener("appMessage", currentMediaIdCallback), [currentMediaIdCallback]);
@@ -70,8 +74,14 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [setAppInfo]);
   useEffect(() => frontendNetwork.addListener("appMessage", currentSlideShowIntervalCallback), [currentSlideShowIntervalCallback]);
 
+  const appInfoUpdateCallback = useCallback((event: Event) => {
+    if (isAppMessageEvent(event) && isAppInfoUpdateMessage(event.detail)) {
+      setAppInfo(old => old === null ? null : ({ ...old, ...event.detail.data }));
+    }
+  }, [setAppInfo]);
+  useEffect(() => frontendNetwork.addListener("appMessage", appInfoUpdateCallback), [appInfoUpdateCallback]);
+
   const currentStateCallback = useCallback((event: Event) => {
-    console.log("currentStateCallback", event);
     if (isAppMessageEvent(event) && isSetGestureAppStateMessage(event.detail)) {
       const { newGestureAppState: gestureAppState } = event.detail.data;
       setAppInfo(old => old === null ? null : ({ ...old, gestureAppState }));
@@ -80,8 +90,8 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   useEffect(() => frontendNetwork.addListener("appMessage", currentStateCallback), [currentStateCallback]);
 
 
-  const value = useMemo(() => ({ appInfo, setAppInfo, frontendNetwork, selectedFolderPath, setSelectedFolderPath, files, setFiles }),
-    [appInfo, selectedFolderPath, files]);
+  const value = useMemo(() => ({ appInfo, setAppInfo, frontendNetwork, selectedFolderPath, setSelectedFolderPath, files, setFiles, randomFlip, setRandomFlip }),
+    [appInfo, selectedFolderPath, files, randomFlip]);
 
   return <AppContext.Provider value={value}>
     {children}
